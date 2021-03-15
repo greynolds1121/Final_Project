@@ -1,0 +1,158 @@
+---
+title: 'Weekly Exercises #5'
+author: "Gabriel Reynolds"
+output: 
+  html_document:
+    keep_md: TRUE
+    toc: TRUE
+    toc_float: TRUE
+    df_print: paged
+    code_download: true
+    code_folding: hide 
+    theme: yeti
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error=FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+library(tidyverse)     # for data cleaning and plotting
+library(lubridate)     # for date manipulation
+library(openintro)     # for the abbr2state() function
+library(maps)          # for map data
+library(ggmap)         # for mapping points on maps
+library(gplots)        # for col2hex() function
+library(RColorBrewer)  # for color palettes
+library(sf)            # for working with spatial data
+library(leaflet)       # for highly customizable mapping
+library(ggthemes)      # for more themes (including theme_map())
+library(readr)
+library(plotly)
+theme_set(theme_minimal())
+```
+
+
+```{r}
+vaccines <- read_csv('immunizationspercentages.csv')
+```
+
+
+```{r}
+vaccines %>% 
+  filter(location == "Minnesota") %>% 
+  ggplot(aes(x = year, y = percent, color = vaccine)) + 
+  geom_line()
+
+vaccines %>% 
+  filter(location == "Ramsey") %>% 
+  ggplot(aes(x = year, y = percent, color = vaccine)) + 
+  geom_line()
+
+county_list <- vaccines %>%
+  collect() %>%
+  split(.$vaccine) 
+```
+
+```{r}
+states <- map_data("state")
+
+mn_map <- subset(states, region %in% c("minnesota"))
+
+mn_map %>% 
+  ggplot() + 
+  geom_polygon(aes(x = long, y = lat, group = group), fill = "blue", color = "black") + 
+  coord_fixed(1.3)
+
+mn_map_data <- subset(states, region == "minnesota")
+
+counties <- map_data("county")
+
+mn_county <- subset(counties, region == "minnesota")
+
+mn_base <- ggplot(data = mn_map_data, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray")
+
+mn_base + 
+  theme_nothing() +
+  geom_polygon(data = mn_county, fill = NA, color = "white") +
+  geom_polygon(color = "black", fill = NA)  # get the state border back on top
+
+vaccines <- vaccines %>% 
+  mutate(location = str_replace(location, "St. Louis", "st louis"))
+  
+
+clean_vaccines2 <- vaccines %>% 
+  filter(location != "Minnesota") %>%
+  mutate(location = str_to_lower(location)) %>% 
+  rename(subregion = location)
+
+vaccines_and_map <- clean_vaccines2 %>% 
+  left_join(mn_county, 
+            by = c("subregion"))
+
+vaccines_and_map %>% 
+  filter(vaccine == "Hep A",
+         year = "2019", 
+         subregion == "ramsey") %>% 
+  ggplot(data = vaccines_and_map, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray") +
+  geom_polygon(data = vaccines_and_map, aes(fill = percent), color = "white") +
+  geom_polygon(color = "black", fill = NA) +
+  theme_bw() +
+  theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank() 
+  ) 
+  #scale_fill_gradient(low = "#27251F", high = "#00704A") 
+  
+
+```
+
+
+```{r}
+ramsey <- vaccines_and_map %>% 
+  filter(subregion %in%  c("ramsey", "cook", "st louis"), 
+         year == "2019", 
+         vaccine == "DTap")
+
+map1 <- ramsey %>% 
+  ggplot(data = vaccines_and_map, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) +
+  geom_polygon(color = "black", fill = "gray") +
+  geom_polygon(data = ramsey, aes(fill = percent), color = "black") +
+  geom_polygon(color = "black", fill = NA)
+
+  
+ggplotly(map1)
+
+
+  # for dashboard: enter county(s), year(s), and vaccine(s) and produce a table 
+
+```
+
+
+
+```{r}
+vaccines_lower <- vaccines %>% 
+  mutate(location = str_to_lower(location)) %>% 
+  filter(location != "minnesota", 
+         year == "2019", 
+         vaccine == "DTap" 
+         ) 
+
+
+```
+
+
+
+
+
+

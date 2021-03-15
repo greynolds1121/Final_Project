@@ -1,0 +1,13 @@
+name: Final_Project
+title: Final_Project
+username:
+account: greynolds
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3765907
+bundleId: 4328841
+url: https://greynolds.shinyapps.io/Final_Project/
+when: 1615432411.5679
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: mdh_logo.png|Workspace.Rmd
